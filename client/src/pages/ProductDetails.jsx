@@ -33,7 +33,7 @@ const ProductDetails = () => {
             <p>
                 <Link to={"/"}>Home</Link> /
                 <Link to={"/products"}> Products</Link> /
-                <Link to={`/products/${product.category.toLowerCase()}`}> {product.category}</Link> /
+                <Link to={`/products/{product.category.toLowerCase()}`}> {product.category}</Link> /
                 <span className="text-indigo-500"> {product.name}</span>
             </p>
 
@@ -42,7 +42,7 @@ const ProductDetails = () => {
                     <div className="flex flex-col gap-3">
                         {product.image.map((image, index) => (
                             <div key={index} onClick={() => setThumbnail(image)} className="border max-w-24 border-gray-500/30 rounded overflow-hidden cursor-pointer" >
-                                <img src={image} alt={`Thumbnail ${index + 1}`} />
+                                <img src={image} alt={`Thumbnail {index + 1}`} />
                             </div>
                         ))}
                     </div>
@@ -65,8 +65,8 @@ const ProductDetails = () => {
                     </div>
 
                     <div className="mt-6">
-                        <p className="text-gray-500/70 line-through">Rs. {currency}{product.price}</p>
-                        <p className="text-2xl font-medium">Rs. {currency}{product.offerPrice}</p>
+                        <p className="text-gray-500/70 line-through"> {currency}{product.price}</p>
+                        <p className="text-2xl font-medium"> {currency}{product.offerPrice}</p>
                         <span className="text-gray-500/70">(inclusive of all taxes)</span>
                     </div>
 

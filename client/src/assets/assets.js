@@ -41,6 +41,10 @@ import coin_icon2 from "./coin_icon2.jpg"
 import leaf_icon2 from "./leaf_icon2.jpg"
 import refresh_icon from "./refresh_icon.png"
 import remove_icon from "./remove_icon.png"
+import address_page_image from "./address_page_image.jpg"
+import add_icon from "./add_icon.png"
+import product_list_icon from "./product_list_icon.png"
+import order_icon from "./order_icon.png"
 
 
 
@@ -89,6 +93,10 @@ export const assets = {
     leaf_icon2,
     refresh_icon,
     remove_icon,
+    address_page_image,
+    add_icon,
+    product_list_icon,
+    order_icon,
 
     
 
@@ -315,6 +323,50 @@ export const dummyAddress = [
     zipcode: 123456,
     country: "IN",
     phone: "1234567890",
+  },
+]
+
+  export const dummyOrders = [
+  {
+    _id: "67e2589a8f87e63366786400",
+    userId: "67b5880e4d09769c5ca61644",
+    items: [
+      {
+        product: dummyProducts[3],
+        quantity: 2,
+        _id: "67e2589a8f87e63366786401",
+      },
+    ],
+    amount: 500,
+    address: dummyAddress[0],
+    status: "Order Placed",
+    paymentType: "Online",
+    isPaid: true,
+    createdAt: "2025-03-25T07:17:46.018Z",
+    updatedAt: "2025-03-25T07:18:13.103Z",
+  },
+  {
+    _id: "67e258798f87e633667863f2",
+    userId: "67b5880e4d09769c5ca61644",
+    items: [
+      {
+        product: dummyProducts[0],
+        quantity: 1,
+        _id: "67e258798f87e633667863f3",
+      },
+      {
+        product: dummyProducts[1],
+        quantity: 1,
+        _id: "67e258798f87e633667863f4",
+      },
+    ],
+    amount: 400,
+    address: dummyAddress[0],
+    status: "Order Placed",
+    paymentType: "COD",
+    isPaid: false,
+    createdAt: "2025-03-25T07:17:13.068Z",
+    updatedAt: "2025-03-25T07:17:13.068Z",
   },
 ];
 
