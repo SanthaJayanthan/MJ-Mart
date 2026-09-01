@@ -75,6 +75,8 @@ import ramen_image1 from "./ramen_image1.jpg"
 import knorr_soup_image1 from "./knorr_soup_image1.jpg"
 import kottu_mee_image1 from "./kottu_mee_image1.jpg"
 import buldak_ramen_image1 from "./buldak_ramen_image1.jpg"
+import upload_icon from "./upload_icon.jpg"
+import box_icon from "./box_icon.jpg"
 
 
 
@@ -156,6 +158,8 @@ export const assets = {
     knorr_soup_image1,
     kottu_mee_image1,
     buldak_ramen_image1,
+    upload_icon,
+    box_icon,
 
 
     
@@ -872,8 +876,8 @@ export const dummyAddress = [
   {
     _id: "67b5b9e54ea97f71bbc196a0",
     userId: "67b5880e4d09769c5ca61644",
-    firstName: "Great",
-    lastName: "Stack",
+    firstName: "MJ",
+    lastName: "Mart",
     email: "user.greatstack@gmail.com",
     street: "Street 123",
     city: "Main City",
