@@ -8,9 +8,13 @@ function ProductCategory() {
     const { products } = useAppContext()
     const { category } = useParams()
 
-    const searchCategory = categories.find((item)=> item.path.toLowerCase() === category)
+    const normalize = (s = '') => s.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-    const filteredProducts = products.filter((product)=>product.category.toLowerCase() === category)
+    const searchCategory = categories.find((item)=> normalize(item.path) === normalize(category))
+
+    const filteredProducts = products.filter((product)=> normalize(product.category) === normalize(category))
+    console.log('URL category:', category)
+    console.log('Saved categories:', [...new Set(products.map(p => p.category))])
 
 
 
@@ -23,7 +27,7 @@ function ProductCategory() {
             </div>
         )}
         {filteredProducts.length > 0 ? (
-            <div className='grid grid-cols2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6 mt-6'>
+            <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6 mt-6'>
                 {filteredProducts.map((product)=>(
                     <ProductCard key={product._id} product={product}/>
                 ))}

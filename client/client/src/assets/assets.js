@@ -129,7 +129,7 @@ export const categories = [
 
      {
         text: "Dairy Products",
-        path: "DairyProducts",
+        path: "Dairy",
         Image: Dairy_products_category,
         bgcolor: "#b4f6cd",
     },
