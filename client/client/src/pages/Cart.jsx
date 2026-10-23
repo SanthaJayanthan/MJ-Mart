@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
-import { assets, dummyAddress } from "../assets/assets";
+import toast from "react-hot-toast";
+import { assets } from "../assets/assets";
+
+
 
 const Cart = () => {
-    const {products, currency, cartItems, removeFromCart, getCartCount, updateCartItem, navigate, getCartAmount} = useAppContext()
+    const {products, currency, cartItems, removeFromCart, getCartCount, updateCartItem, navigate, getCartAmount, axios, user} = useAppContext()
     const [cartArray, setCartArray] = useState([])
-    const [addresses, setAddresses] = useState(dummyAddress)
-    const [showAddress, setShowAddress] =useState(false)
-    const [selectedAddrss, setSelectedAddress] = useState(dummyAddress[0])
+    const [addresses, setAddresses] = useState([])
+    const [showAddress, setShowAddress] =useState(false) 
+    const [selectedAddrss, setSelectedAddress] = useState(null)
     const [paymentOption, setPaymentOption] = useState("COD")
 
     const getCart = ()=>{
@@ -20,6 +23,23 @@ const Cart = () => {
         setCartArray(tempArray)
     }
 
+    const getUserAddress = async ()=>{
+        try {
+            const {data} = await axios.get('/api/address/get');
+             console.log('address response:', data);
+            if(data.success){
+                setAddresses(data.addresses)
+                if(data.addresses.length > 0){
+                    setSelectedAddress(data.addresses[0])
+                }
+            }else{
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
     const placeOrder = async ()=>{
 
     }
@@ -30,6 +50,13 @@ const Cart = () => {
         }
 
     },[products, cartItems])
+
+    useEffect(()=>{
+        if(user){
+            getUserAddress()
+        }
+
+    },[user])
 
   
     return products.length > 0 && cartItems ? (
@@ -95,7 +122,7 @@ const Cart = () => {
                         </button>
                         {showAddress && (
                             <div className="absolute top-12 py-1 bg-white border border-gray-300 text-sm w-full">
-                                {addresses.map((address, index)=>(<p onClick={() => { setSelectedAddress(address);setShowAddress(false)}} className="text-gray-500 p-2 hover:bg-gray-100">
+                                {addresses.map((address, index)=>(<p key={index} onClick={() => { setSelectedAddress(address);setShowAddress(false)}} className="text-gray-500 p-2 hover:bg-gray-100">
                                     {address.street}, {address.city}, {address.province}, {address.country}
                                 </p>))}
 
