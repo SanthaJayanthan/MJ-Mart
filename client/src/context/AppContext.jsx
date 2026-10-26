@@ -6,6 +6,22 @@ import axios from "axios";
 
 // baseURL and withCredentials are set in main.jsx
 
+// Delivery options shared with the Budget Tracker
+export const DELIVERY_OPTIONS = [
+  { id: "pickup", label: "Store pickup — Free", rate: 0 },
+  { id: "colombo", label: "Inside Colombo — Rs. 100/km", rate: 100 },
+  { id: "outside", label: "Outside Colombo — Rs. 200/km", rate: 200 },
+];
+
+const BUDGET_KEY = "mjmart-budget";
+const loadBudget = () => {
+  try {
+    return JSON.parse(localStorage.getItem(BUDGET_KEY)) || {};
+  } catch {
+    return {};
+  }
+};
+
 export const AppContext = createContext();
 
 export const AppContextProvider = ({children})=>{
@@ -19,7 +35,22 @@ export const AppContextProvider = ({children})=>{
     const [products, setProducts] = useState([])
 
     const [cartItems, setCartItems] = useState({})
-    const [searchQuery, setSearchQuery] = useState({})
+    const [searchQuery, setSearchQuery] = useState("")
+
+    const [budgetSettings, setBudgetSettings] = useState(() => ({
+        budget: 5000,
+        unlimited: false,
+        deliveryId: "outside",
+        distance: 1,
+        includeDelivery: true,
+        ...loadBudget(),
+    }))
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(BUDGET_KEY, JSON.stringify(budgetSettings))
+        } catch {}
+    }, [budgetSettings])
 
     // Fetch Seller Status
     const fetchSeller = async ()=>{
@@ -34,8 +65,8 @@ export const AppContextProvider = ({children})=>{
             setIsSeller(false)
         }
     }
-    // Fetch User Auth Status , User Data and Cart Items
 
+    // Fetch User Auth Status , User Data and Cart Items
     const fetchUser = async ()=>{
         try {
             const { data } = await axios.get('/api/user/is-auth');
@@ -47,7 +78,6 @@ export const AppContextProvider = ({children})=>{
             setUser(null)
         }
     }
-
 
     // Fetch All Products
     const fetchProducts = async ()=>{
@@ -63,15 +93,39 @@ export const AppContextProvider = ({children})=>{
         }
     }
 
+    // Total (items + delivery if included) for a given cart, same maths as the tracker
+    const getBudgetTotal = (cartData) => {
+        let spent = 0;
+        for (const id in cartData) {
+            const p = products.find((item) => item._id === id);
+            if (p && cartData[id] > 0) spent += p.offerPrice * cartData[id];
+        }
+        const { deliveryId, distance, includeDelivery } = budgetSettings;
+        const rate = DELIVERY_OPTIONS.find((o) => o.id === deliveryId)?.rate ?? 0;
+        const fee = rate * Math.max(Number(distance) || 0, 0);
+        return includeDelivery && spent > 0 ? spent + fee : spent;
+    }
+
+    // Returns true (and shows an error) if this cart would pass the budget
+    const exceedsBudget = (cartData) => {
+        if (!user || budgetSettings.unlimited) return false;
+        const total = getBudgetTotal(cartData);
+        if (total > budgetSettings.budget) {
+            toast.error(
+                `You are over your budget limit! This would bring you to ${currency}${total.toLocaleString()}, but your budget is ${currency}${Number(budgetSettings.budget).toLocaleString()}.`
+            )
+            return true;
+        }
+        return false;
+    }
+
     // Add Product to Cart
     const addToCart = (itemId)=>{
         let cartData = structuredClone(cartItems);
+        cartData[itemId] = (cartData[itemId] || 0) + 1;
 
-        if(cartData[itemId]){
-            cartData[itemId] += 1;
-        }else{
-            cartData[itemId] = 1;
-        }
+        if (exceedsBudget(cartData)) return;
+
         setCartItems(cartData);
         toast.success("Added to Cart")
     }
@@ -79,7 +133,11 @@ export const AppContextProvider = ({children})=>{
     // Update Cart Items Quantity
     const updateCartItem = (itemId, Quantity)=>{
         let cartData = structuredClone(cartItems);
+        const increasing = Quantity > (cartData[itemId] || 0);
         cartData[itemId] = Quantity
+
+        if (increasing && exceedsBudget(cartData)) return;
+
         setCartItems(cartData)
         toast.success("Cart Updated")
     }
@@ -111,7 +169,7 @@ export const AppContextProvider = ({children})=>{
         let totalAmount = 0;
         for (const items in cartItems){
             let itemInfo = products.find((product)=> product._id === items);
-            if(cartItems[items] > 0){
+            if(itemInfo && cartItems[items] > 0){
                 totalAmount += itemInfo.offerPrice * cartItems[items]
             }
         }
@@ -123,6 +181,7 @@ export const AppContextProvider = ({children})=>{
         fetchSeller()
         fetchProducts()
     },[])
+
     // Update Database Cart Items
     useEffect(()=>{
         const updateCart = async ()=>{
@@ -140,13 +199,13 @@ export const AppContextProvider = ({children})=>{
             updateCart()
         }
 
-
     },[cartItems])
 
     const value = { navigate, user, setUser, setIsSeller, isSeller,
         showUserLogin, setShowUserLogin, products, currency, addToCart,
         updateCartItem, removeFromCart, cartItems, searchQuery, setSearchQuery,
-        getCartAmount, getCartCount, axios, fetchProducts, setCartItems
+        getCartAmount, getCartCount, axios, fetchProducts, setCartItems,
+        budgetSettings, setBudgetSettings
     }
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>

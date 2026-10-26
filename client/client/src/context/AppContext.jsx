@@ -7,6 +7,22 @@ import axios from "axios";
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
+// Delivery options shared with the Budget Tracker
+export const DELIVERY_OPTIONS = [
+  { id: "pickup", label: "Store pickup — Free", rate: 0 },
+  { id: "colombo", label: "Inside Colombo — Rs. 100/km", rate: 100 },
+  { id: "outside", label: "Outside Colombo — Rs. 200/km", rate: 200 },
+];
+
+const BUDGET_KEY = "mjmart-budget";
+const loadBudget = () => {
+  try {
+    return JSON.parse(localStorage.getItem(BUDGET_KEY)) || {};
+  } catch {
+    return {};
+  }
+};
+
 
 export const AppContext = createContext();
 
@@ -22,6 +38,21 @@ export const AppContextProvider = ({children})=>{
 
     const [cartItems, setCartItems] = useState({})
     const [searchQuery, setSearchQuery] = useState({})
+
+    const [budgetSettings, setBudgetSettings] = useState(() => ({
+    budget: 5000,
+    unlimited: false,
+    deliveryId: "outside",
+    distance: 1,
+    includeDelivery: true,
+    ...loadBudget(),
+}))
+
+useEffect(() => {
+    try {
+        localStorage.setItem(BUDGET_KEY, JSON.stringify(budgetSettings))
+    } catch {}
+}, [budgetSettings])
 
     // Fetch Seller Status
     const fetchSeller = async ()=>{
