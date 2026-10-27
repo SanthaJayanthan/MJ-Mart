@@ -16,6 +16,7 @@ const BudgetTracker = () => {
 
   const [draft, setDraft] = useState(String(budget));
   const [selected, setSelected] = useState([]);
+  const [open, setOpen] = useState(false); // mobile bottom sheet
 
   // Show only on home, /products, and /products/:category (not product details)
   const segments = pathname.split("/").filter(Boolean);
@@ -75,14 +76,14 @@ const BudgetTracker = () => {
   const handleCheckout = () => {
     if (getCartCount() === 0) return toast.error("Your cart is empty");
     if (overBudget) return toast.error("You are over budget. Remove items or increase your budget.");
+    setOpen(false);
     navigate("/cart");
     window.scrollTo(0, 0);
   };
 
-  return (
-    <aside className="hidden lg:block fixed right-4 top-24 z-20 w-72 max-h-[calc(100vh-7rem)] overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg p-5">
-      <h2 className="text-xl font-semibold text-gray-800">Budget Tracker</h2>
-
+  // Shared panel body (used by the desktop sidebar and the mobile sheet)
+  const content = (
+    <>
       <label className="flex items-center gap-2 mt-3 text-sm text-gray-700 cursor-pointer">
         <input type="checkbox" checked={unlimited} onChange={(e) => update({ unlimited: e.target.checked })} />
         Unlimited budget ∞
@@ -157,7 +158,7 @@ const BudgetTracker = () => {
                     <div className="flex items-center border border-gray-300 rounded">
                       <button
                         onClick={() => removeFromCart(item.id)}
-                        className="w-6 h-6 leading-none text-gray-700 hover:bg-gray-100 cursor-pointer"
+                        className="w-7 h-7 leading-none text-gray-700 hover:bg-gray-100 cursor-pointer"
                         aria-label={`Decrease ${item.name} quantity`}
                       >
                         −
@@ -165,7 +166,7 @@ const BudgetTracker = () => {
                       <span className="w-6 text-center text-xs text-gray-800">{item.qty}</span>
                       <button
                         onClick={() => addToCart(item.id)}
-                        className="w-6 h-6 leading-none text-gray-700 hover:bg-gray-100 cursor-pointer"
+                        className="w-7 h-7 leading-none text-gray-700 hover:bg-gray-100 cursor-pointer"
                         aria-label={`Increase ${item.name} quantity`}
                       >
                         +
@@ -245,7 +246,57 @@ const BudgetTracker = () => {
           Checkout is blocked until you are within budget.
         </p>
       )}
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop: fixed sidebar */}
+      <aside className="hidden lg:block fixed right-4 top-24 z-20 w-72 max-h-[calc(100vh-7rem)] overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg p-5">
+        <h2 className="text-xl font-semibold text-gray-800">Budget Tracker</h2>
+        {content}
+      </aside>
+
+      {/* Mobile / tablet: floating button + bottom sheet */}
+      <div className="lg:hidden">
+        <button
+          onClick={() => setOpen(true)}
+          className={`fixed bottom-4 right-4 z-30 flex flex-col gap-1 min-w-40 px-4 py-2 rounded-2xl bg-white shadow-lg border text-left cursor-pointer ${
+            overBudget ? "border-red-400" : "border-gray-200"
+          }`}
+          aria-label="Open budget tracker"
+        >
+          <span className="flex items-center justify-between gap-3 text-sm font-medium text-gray-800">
+            <span>Budget · {getCartCount()} items</span>
+            <span className={overBudget ? "text-red-500" : "text-gray-700"}>
+              {unlimited ? "∞" : overBudget ? `-${money(Math.abs(remaining))}` : `${money(remaining)} left`}
+            </span>
+          </span>
+          <span className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <span className={`block h-full transition-all duration-300 ${barColor}`} style={{ width: `${percent}%` }} />
+          </span>
+        </button>
+
+        {open && (
+          <div className="fixed inset-0 z-[60]">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+            <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto bg-white rounded-t-2xl shadow-2xl p-5 pb-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800">Budget Tracker</h2>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="w-8 h-8 rounded-full text-gray-600 hover:bg-gray-100 text-lg leading-none cursor-pointer"
+                  aria-label="Close budget tracker"
+                >
+                  ✕
+                </button>
+              </div>
+              {content}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
