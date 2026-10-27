@@ -1,16 +1,57 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAppContext, DELIVERY_OPTIONS } from "../context/AppContext";
 
 const BudgetTracker = () => {
-  const { user, currency, getCartAmount, getCartCount, navigate, budgetSettings, setBudgetSettings } = useAppContext();
+  const {
+    user, currency, products, cartItems,
+    getCartAmount, getCartCount, navigate,
+    addToCart, removeFromCart, removeItemsFromCart,
+    budgetSettings, setBudgetSettings,
+  } = useAppContext();
+  const { pathname } = useLocation();
   const { budget, unlimited, deliveryId, distance, includeDelivery } = budgetSettings;
   const update = (patch) => setBudgetSettings((prev) => ({ ...prev, ...patch }));
 
   const [draft, setDraft] = useState(String(budget));
+  const [selected, setSelected] = useState([]);
 
-  // Only show after login
-  if (!user) return null;
+  // Show only on home, /products, and /products/:category (not product details)
+  const segments = pathname.split("/").filter(Boolean);
+  const allowedPage =
+    pathname === "/" ||
+    (segments[0] === "products" && segments.length <= 2);
+
+  // Only show after login, and only on allowed pages
+  if (!user || !allowedPage) return null;
+
+  // Items in the cart
+  const cartList = Object.keys(cartItems || {})
+    .map((id) => {
+      const product = products.find((p) => p._id === id);
+      const qty = cartItems[id];
+      if (!product || !qty || qty <= 0) return null;
+      return { id, name: product.name, qty, price: product.offerPrice, total: product.offerPrice * qty };
+    })
+    .filter(Boolean);
+
+  // Ignore selected ids that are no longer in the cart
+  const selectedIds = selected.filter((id) => cartList.some((item) => item.id === id));
+  const allSelected = cartList.length > 0 && selectedIds.length === cartList.length;
+
+  const toggleItem = (id) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const toggleAll = () =>
+    setSelected(allSelected ? [] : cartList.map((item) => item.id));
+
+  const removeSelected = () => {
+    if (selectedIds.length === 0) return toast.error("Select items to remove");
+    removeItemsFromCart(selectedIds);
+    setSelected([]);
+    toast.success(`${selectedIds.length} item(s) removed`);
+  };
 
   const spent = getCartAmount();
   const rate = DELIVERY_OPTIONS.find((o) => o.id === deliveryId)?.rate ?? 0;
@@ -29,6 +70,13 @@ const BudgetTracker = () => {
     if (!n || n <= 0) return toast.error("Enter a valid budget");
     update({ budget: n });
     toast.success("Budget updated");
+  };
+
+  const handleCheckout = () => {
+    if (getCartCount() === 0) return toast.error("Your cart is empty");
+    if (overBudget) return toast.error("You are over budget. Remove items or increase your budget.");
+    navigate("/cart");
+    window.scrollTo(0, 0);
   };
 
   return (
@@ -80,6 +128,69 @@ const BudgetTracker = () => {
 
       <hr className="my-3 border-gray-200" />
 
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-gray-800">Items ({getCartCount()})</p>
+        {cartList.length > 0 && (
+          <label className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+            Select all
+          </label>
+        )}
+      </div>
+
+      {cartList.length === 0 ? (
+        <p className="text-xs text-gray-500 mt-2">No items added yet</p>
+      ) : (
+        <>
+          <ul className="mt-2 max-h-48 overflow-y-auto space-y-3 pr-1">
+            {cartList.map((item) => (
+              <li key={item.id} className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1 cursor-pointer"
+                  checked={selectedIds.includes(item.id)}
+                  onChange={() => toggleItem(item.id)}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-gray-800 truncate">{item.name}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center border border-gray-300 rounded">
+                      <button
+                        onClick={() => removeFromCart(item.id)}
+                        className="w-6 h-6 leading-none text-gray-700 hover:bg-gray-100 cursor-pointer"
+                        aria-label={`Decrease ${item.name} quantity`}
+                      >
+                        −
+                      </button>
+                      <span className="w-6 text-center text-xs text-gray-800">{item.qty}</span>
+                      <button
+                        onClick={() => addToCart(item.id)}
+                        className="w-6 h-6 leading-none text-gray-700 hover:bg-gray-100 cursor-pointer"
+                        aria-label={`Increase ${item.name} quantity`}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="text-xs text-gray-500">× {money(item.price)}</span>
+                  </div>
+                </div>
+                <span className="font-medium text-gray-800 whitespace-nowrap">{money(item.total)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <button
+            onClick={removeSelected}
+            disabled={selectedIds.length === 0}
+            className="w-full mt-3 py-2 rounded-lg border border-red-300 text-red-500 text-sm hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Remove selected{selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
+          </button>
+        </>
+      )}
+
+      <hr className="my-3 border-gray-200" />
+
       <p className="text-sm font-semibold text-gray-800">Delivery</p>
       <select
         value={deliveryId}
@@ -122,12 +233,18 @@ const BudgetTracker = () => {
       <hr className="my-3 border-gray-200" />
 
       <button
-        onClick={() => { navigate("/cart"); scrollTo(0, 0); }}
+        onClick={handleCheckout}
         disabled={getCartCount() === 0 || overBudget}
+        title={overBudget ? "Over budget: remove items or raise your budget" : ""}
         className="w-full py-3 rounded-lg bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
       >
         Checkout →
       </button>
+      {overBudget && (
+        <p className="text-xs text-red-500 mt-2 text-center">
+          Checkout is blocked until you are within budget.
+        </p>
+      )}
     </aside>
   );
 };

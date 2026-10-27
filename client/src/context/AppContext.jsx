@@ -155,6 +155,13 @@ export const AppContextProvider = ({children})=>{
         setCartItems(cartData)
     }
 
+    // Remove several products from the cart completely (used by the Budget Tracker)
+    const removeItemsFromCart = (ids)=>{
+        let cartData = structuredClone(cartItems);
+        ids.forEach((id) => delete cartData[id]);
+        setCartItems(cartData)
+    }
+
     // Get Cart Item Count
     const getCartCount = ()=>{
         let totalCount = 0;
@@ -203,7 +210,7 @@ export const AppContextProvider = ({children})=>{
 
     const value = { navigate, user, setUser, setIsSeller, isSeller,
         showUserLogin, setShowUserLogin, products, currency, addToCart,
-        updateCartItem, removeFromCart, cartItems, searchQuery, setSearchQuery,
+        updateCartItem, removeFromCart, removeItemsFromCart, cartItems, searchQuery, setSearchQuery,
         getCartAmount, getCartCount, axios, fetchProducts, setCartItems,
         budgetSettings, setBudgetSettings
     }
